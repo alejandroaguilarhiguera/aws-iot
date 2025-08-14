@@ -2,7 +2,8 @@ import os
 import uuid
 import json
 import boto3
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 from botocore.exceptions import ClientError
 
 # Inicializa clientes de AWS
@@ -52,13 +53,15 @@ def lambda_handler(event, context):
     try:
         generated_uuid = str(uuid.uuid4())
         now = datetime.utcnow().isoformat() + 'Z'
+        ttl_seconds = int((datetime.utcnow() + timedelta(days=7)).timestamp())
 
         item = {
             'uuid': generated_uuid,
             'thingName': thing_name,
             'count': 0,
             'createdAt': now,
-            'updatedAt': now
+            'updatedAt': now,
+            'ttl': ttl_seconds
         }
 
         table.put_item(Item=item)
