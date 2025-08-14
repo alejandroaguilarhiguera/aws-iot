@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+
+  CreateCode:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: create_code/
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      Timeout: 10
+      MemorySize: 128
+      Environment:
+        Variables:
+          TABLE_NAME: actions
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            # Permiso para escribir en DynamoDB
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource: arn:aws:dynamodb:us-east-1:640168441720:table/actions
+            # Permiso para describir un thing en IoT Core
+            - Effect: Allow
+              Action:
+                - iot:DescribeThing
+              Resource: arn:aws:iot:us-east-1:640168441720:thing/*
+      Events:
+        ApiPostCode:
+          Type: Api
+          Properties:
+            Path: /code
+            Method: post
+
+
+  GetAllDevices:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_all_devices/
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      Timeout: 10
+      MemorySize: 128
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - iot:ListThings
+              Resource: "*"
+      Events:
+        ApiGetDevices:
+          Type: Api
+          Properties:
+            Path: /devices
+            Method: get
+
+  Publish:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: publish/
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      Timeout: 10
+      MemorySize: 128
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - iot:Publish
+              Resource: arn:aws:iot:us-east-1:640168441720:topic/devices/*/commands
+      Events:
+        ApiPostPublish:
+          Type: Api
+          Properties:
+            Path: /publish
+            Method: post
+
+  ValidationCode:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: validation_code/
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      Timeout: 10
+      MemorySize: 128
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: arn:aws:dynamodb:us-east-1:640168441720:table/actions
+        - Statement:
+            - Effect: Allow
+              Action:
+                - iot:Publish
+              Resource: arn:aws:iot:us-east-1:640168441720:topic/devices/*/commands
+      Events:
+        ApiPostValidate:
+          Type: Api
+          Properties:
+            Path: /validate
+            Method: post

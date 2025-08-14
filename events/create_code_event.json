@@ -1,0 +1,26 @@
+{
+  "body": "{\"thingName\": \"linux_dev\"}",
+  "resource": "/code",
+  "path": "/code",
+  "httpMethod": "POST",
+  "isBase64Encoded": false,
+  "queryStringParameters": {},
+  "pathParameters": {},
+  "stageVariables": {},
+  "headers": {
+    "Content-Type": "application/json",
+    "User-Agent": "SAM Local Test"
+  },
+  "requestContext": {
+    "accountId": "640168441720",
+    "stage": "dev",
+    "requestId": "local-test-request",
+    "identity": {
+      "sourceIp": "127.0.0.1",
+      "userAgent": "SAM Local Test"
+    },
+    "resourcePath": "/code",
+    "httpMethod": "POST",
+    "apiId": "localtest"
+  }
+}
