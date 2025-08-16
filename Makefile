@@ -1,12 +1,45 @@
 # Variables
 PROFILE=default
 EVENTS_DIR=events
+DDB_CONTAINER=dynamodb-local
+DDB_PORT=8000
+TABLE_NAME=actions
 
-# Levantar API en modo escucha
-start-api:
-	sam local start-api --profile $(PROFILE)
+# -----------------------------
+# DynamoDB Local
+# -----------------------------
 
-# Invocar Lambdas individuales
+# Levantar DynamoDB Local
+start-dynamodb:
+	# Si el contenedor ya existe, lo reinicia; si no, lo crea
+	docker ps -a | grep $(DDB_CONTAINER) >/dev/null 2>&1 && docker start $(DDB_CONTAINER) || \
+	docker run -d --name $(DDB_CONTAINER) -p $(DDB_PORT):8000 amazon/dynamodb-local
+	# Crear tabla si no existe
+	aws dynamodb list-tables --endpoint-url http://localhost:$(DDB_PORT) | grep $(TABLE_NAME) >/dev/null 2>&1 || \
+	aws dynamodb create-table \
+		--table-name $(TABLE_NAME) \
+		--attribute-definitions AttributeName=id,AttributeType=S \
+		--key-schema AttributeName=id,KeyType=HASH \
+		--billing-mode PAY_PER_REQUEST \
+		--endpoint-url http://localhost:$(DDB_PORT)
+
+# Detener y eliminar DynamoDB Local
+stop-dynamodb:
+	docker stop $(DDB_CONTAINER) || true
+	docker rm $(DDB_CONTAINER) || true
+
+# -----------------------------
+# SAM Local
+# -----------------------------
+
+# Levantar API SAM Local (depende de DynamoDB)
+start-api: start-dynamodb
+	AWS_ENDPOINT_URL=http://localhost:$(DDB_PORT) sam local start-api --profile $(PROFILE) --env-vars env.json
+
+# -----------------------------
+# Invocar Lambdas individualmente
+# -----------------------------
+
 invoke-createcode:
 	sam local invoke CreateCode --event $(EVENTS_DIR)/create_code_event.json --profile $(PROFILE)
 

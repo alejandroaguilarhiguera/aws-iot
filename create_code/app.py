@@ -3,12 +3,25 @@ import uuid
 import json
 import boto3
 from datetime import datetime, timedelta
-import time
 from botocore.exceptions import ClientError
 
 # Inicializa clientes de AWS
+endpoint_url = "http://localhost:8000"  # Debe apuntar a tu DynamoDB Local
 dynamodb = boto3.resource('dynamodb')
-iot_client = boto3.client('iot')
+iot_client = boto3.client(
+    'iot',
+    region_name='us-east-1',
+    config=boto3.session.Config(connect_timeout=3, read_timeout=3)
+)
+
+# if os.environ.get('USE_IOT_PROD', 'false').lower() == 'true':
+#     print('Production >>>>')
+#     iot_client = boto3.client('iot', region_name=os.environ['AWS_REGION'])
+# else:
+#     print('development <<<<<<')
+#     iot_client = boto3.client('iot', endpoint_url="http://localhost:1234")
+
+
 
 # Nombre de la tabla desde variable de entorno
 table_name = os.environ['TABLE_NAME']
@@ -56,7 +69,7 @@ def lambda_handler(event, context):
         ttl_seconds = int((datetime.utcnow() + timedelta(days=7)).timestamp())
 
         item = {
-            'uuid': generated_uuid,
+            'id': generated_uuid,
             'thingName': thing_name,
             'count': 0,
             'createdAt': now,
