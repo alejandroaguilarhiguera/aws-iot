@@ -13,7 +13,7 @@ TABLE_NAME=actions
 start-dynamodb:
 	# Si el contenedor ya existe, lo reinicia; si no, lo crea
 	docker ps -a | grep $(DDB_CONTAINER) >/dev/null 2>&1 && docker start $(DDB_CONTAINER) || \
-	docker run -d --name $(DDB_CONTAINER) -p $(DDB_PORT):8000 amazon/dynamodb-local
+	docker run  -d --name $(DDB_CONTAINER) --network aws_local_network -p $(DDB_PORT):8000 amazon/dynamodb-local
 	# Crear tabla si no existe
 	aws dynamodb list-tables --endpoint-url http://localhost:$(DDB_PORT) | grep $(TABLE_NAME) >/dev/null 2>&1 || \
 	aws dynamodb create-table \
@@ -34,20 +34,20 @@ stop-dynamodb:
 
 # Levantar API SAM Local (depende de DynamoDB)
 start-api: start-dynamodb
-	AWS_ENDPOINT_URL=http://localhost:$(DDB_PORT) sam local start-api --profile $(PROFILE) --env-vars env.json
+	AWS_ENDPOINT_URL=http://localhost:$(DDB_PORT) sam local start-api --docker-network aws_local_network --profile $(PROFILE) --env-vars env.json
 
 # -----------------------------
 # Invocar Lambdas individualmente
 # -----------------------------
 
 invoke-createcode:
-	sam local invoke CreateCode --event $(EVENTS_DIR)/create_code_event.json --profile $(PROFILE)
+	sam local invoke CreateCode --event $(EVENTS_DIR)/create_code_event.json --profile $(PROFILE)  --env-vars env.json
 
 invoke-getalldevices:
-	sam local invoke GetAllDevices --event $(EVENTS_DIR)/get_all_devices_event.json --profile $(PROFILE)
+	sam local invoke GetAllDevices --event $(EVENTS_DIR)/get_all_devices_event.json --profile $(PROFILE) --env-vars env.json
 
 invoke-publish:
-	sam local invoke Publish --event $(EVENTS_DIR)/publish_event.json --profile $(PROFILE)
+	sam local invoke Publish --event $(EVENTS_DIR)/publish_event.json --profile $(PROFILE) --env-vars env.json
 
 invoke-validationcode:
-	sam local invoke ValidationCode --event $(EVENTS_DIR)/validation_code_event.json --profile $(PROFILE)
+	sam local invoke ValidationCode --event $(EVENTS_DIR)/validation_code_event.json --profile $(PROFILE) --env-vars env.json

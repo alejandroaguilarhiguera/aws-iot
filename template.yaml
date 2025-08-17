@@ -25,6 +25,8 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref ActionsTable
+          LOCAL: "false"
+
       Policies:
         - Version: '2012-10-17'
           Statement:
@@ -51,6 +53,9 @@ Resources:
       Runtime: python3.13
       Timeout: 10
       MemorySize: 128
+      Environment:
+        Variables: 
+          LOCAL: "false"
       Policies:
         - Version: '2012-10-17'
           Statement:
