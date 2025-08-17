@@ -6,12 +6,15 @@ from datetime import datetime, timedelta
 from botocore.exceptions import ClientError
 
 # Inicializa clientes de AWS
-endpoint_url = "http://dynamodb-local:8000"  # Debe apuntar a tu DynamoDB Local
-dynamodb = boto3.resource("dynamodb", endpoint_url=endpoint_url)
+# endpoint_url = "http://dynamodb-local:8000"  # Debe apuntar a tu DynamoDB Local
+# endpoint_url = "http://192.168.1.3:8000"  # Debe apuntar a tu DynamoDB Local
+endpoint_url = "http://host.docker.internal:8000"  # Debe apuntar a tu DynamoDB Local
+# 
+dynamodb = boto3.resource("dynamodb")
 if os.environ.get("LOCAL", "false").lower() == "true":
     dynamodb = boto3.resource("dynamodb", endpoint_url=endpoint_url)
 else:
-    dynamodb = boto3.resource("dynamodb", region_name=os.environ["AWS_REGION"])
+    dynamodb = boto3.resource("dynamodb")
 
 # iot_client = boto3.client(
 #     "iot",
@@ -22,15 +25,15 @@ else:
 if os.environ.get("LOCAL", "false").lower() == "true":
     print("TODO: local iot")
     # iot_client = boto3.client("iot", endpoint_url="http://localhost:1234")
-    iot_client = boto3.client("iot", region_name=os.environ["AWS_REGION"])
+    iot_client = boto3.client("iot")
 
 else:
-    iot_client = boto3.client("iot", region_name=os.environ["AWS_REGION"])
+    iot_client = boto3.client("iot")
 
-
-# Nombre de la tabla desde variable de entorno
 table_name = os.environ["TABLE_NAME"]
 table = dynamodb.Table(table_name)
+
+# Nombre de la tabla desde variable de entorno
 
 def lambda_handler(event, context):
     try:
