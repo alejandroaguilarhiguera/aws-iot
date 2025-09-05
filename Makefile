@@ -11,10 +11,9 @@ TABLE_NAME=actions
 
 # Levantar DynamoDB Local
 start-dynamodb:
-	# Si el contenedor ya existe, lo reinicia; si no, lo crea
+	docker network inspect aws_local_network >/dev/null 2>&1 || docker network create aws_local_network
 	docker ps -a | grep $(DDB_CONTAINER) >/dev/null 2>&1 && docker start $(DDB_CONTAINER) || \
-	docker run  -d --name $(DDB_CONTAINER) --network aws_local_network -p $(DDB_PORT):8000 amazon/dynamodb-local
-	# Crear tabla si no existe
+	docker run -d --name $(DDB_CONTAINER) --network aws_local_network -p $(DDB_PORT):8000 amazon/dynamodb-local
 	aws dynamodb list-tables --endpoint-url http://localhost:$(DDB_PORT) | grep $(TABLE_NAME) >/dev/null 2>&1 || \
 	aws dynamodb create-table \
 		--table-name $(TABLE_NAME) \
@@ -23,7 +22,6 @@ start-dynamodb:
 		--billing-mode PAY_PER_REQUEST \
 		--endpoint-url http://localhost:$(DDB_PORT)
 
-# Detener y eliminar DynamoDB Local
 stop-dynamodb:
 	docker stop $(DDB_CONTAINER) || true
 	docker rm $(DDB_CONTAINER) || true
@@ -32,22 +30,26 @@ stop-dynamodb:
 # SAM Local
 # -----------------------------
 
-# Levantar API SAM Local (depende de DynamoDB)
 start-api: start-dynamodb
-	AWS_ENDPOINT_URL=http://localhost:$(DDB_PORT) sam local start-api --docker-network aws_local_network --profile $(PROFILE) --env-vars env.json
-
+	AWS_ENDPOINT_URL=http://localhost:$(DDB_PORT) sam local start-api --docker-network aws_local_network --host 0.0.0.0 --profile $(PROFILE) --env-vars env.json
 # -----------------------------
-# Invocar Lambdas individualmente
+# Lambdas
 # -----------------------------
 
 invoke-createcode:
-	sam local invoke CreateCode --event $(EVENTS_DIR)/create_code_event.json --profile $(PROFILE)  --env-vars env.json
+	sam local invoke CreateCode --event ./events/create_code_event.json  --env-vars env.json
 
 invoke-getalldevices:
-	sam local invoke GetAllDevices --event $(EVENTS_DIR)/get_all_devices_event.json --profile $(PROFILE) --env-vars env.json
+	sam local invoke GetAllDevices --event ./events/get_all_devices_event.json --env-vars env.json
 
 invoke-publish:
-	sam local invoke Publish --event $(EVENTS_DIR)/publish_event.json --profile $(PROFILE) --env-vars env.json
+	sam local invoke Publish --event ./events/publish_event.json --env-vars env.json
 
 invoke-validationcode:
-	sam local invoke ValidationCode --event $(EVENTS_DIR)/validation_code_event.json --profile $(PROFILE) --env-vars env.json
+	sam local invoke ValidationCode --event ./events/validation_code_event.json --env-vars env.json
+
+invoke-list_streams:
+	sam local invoke ListStreams --event ./events/list_streams_event.json --env-vars env.json
+
+invoke-stream_live:
+	sam local invoke StreamLive --event ./events/stream_live_event.json --env-vars env.json

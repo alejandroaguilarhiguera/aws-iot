@@ -2,6 +2,34 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
 Resources:
+  # --------------------------
+  # Kinesis Video
+  # --------------------------
+  KinesisVideoStream:
+    Type: AWS::KinesisVideo::Stream
+    Properties:
+      Name: MiStreamVideo
+      DataRetentionInHours: 2
+
+  # --------------------------
+  # API Gateway con Authorizer
+  # --------------------------
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: MyApi
+      StageName: dev
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt CognitoUserPool.Arn
+            Identity:
+              Header: Authorization
+        DefaultAuthorizer: CognitoAuthorizer
+
+  # --------------------------
+  # DynamoDB
+  # --------------------------
   ActionsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -14,12 +42,26 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
-  KinesisVideoStream:
-    Type: AWS::KinesisVideo::Stream
+  # --------------------------
+  # Cognito
+  # --------------------------
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
     Properties:
-      Name: MiStreamVideo
-      DataRetentionInHours: 2  # tiempo de retencion de vide
+      UserPoolName: MiUserPool
+      AutoVerifiedAttributes:
+        - email
 
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      ClientName: MiAppClient
+      GenerateSecret: false
+
+  # --------------------------
+  # Lambdas
+  # --------------------------
   CreateCode:
     Type: AWS::Serverless::Function
     Properties:
@@ -48,6 +90,7 @@ Resources:
         ApiPostCode:
           Type: Api
           Properties:
+            RestApiId: !Ref MyApi
             Path: /code
             Method: post
 
@@ -73,6 +116,7 @@ Resources:
         ApiGetDevices:
           Type: Api
           Properties:
+            RestApiId: !Ref MyApi
             Path: /devices
             Method: get
 
@@ -94,6 +138,7 @@ Resources:
         ApiPostPublish:
           Type: Api
           Properties:
+            RestApiId: !Ref MyApi
             Path: /publish
             Method: post
 
@@ -122,3 +167,50 @@ Resources:
           Properties:
             Path: /validate
             Method: post
+
+  ListStreams:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: list_kinesis_streams/
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      Timeout: 10
+      MemorySize: 128
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - kinesisvideo:ListStreams
+                - kinesisvideo:DescribeStream
+              Resource: "*"
+      Events:
+        ApiGetStreams:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /streams
+            Method: get
+
+  StreamLive:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: streams_live/
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      Timeout: 10
+      MemorySize: 128
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - kinesisvideo:Get*
+                - kinesisvideo:DescribeStream
+                - kinesisvideo:ListFragments
+              Resource: "*"
+      Events:
+        ApiGetLiveStream:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /streams/live
+            Method: get

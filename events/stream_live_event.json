@@ -1,0 +1,28 @@
+{
+  "body": null,
+  "resource": "/streams/live",
+  "path": "/streams/live",
+  "httpMethod": "GET",
+  "isBase64Encoded": false,
+  "queryStringParameters": {
+    "streamName": "mi-webcam-stream"
+  },
+  "pathParameters": {},
+  "stageVariables": {},
+  "headers": {
+    "Content-Type": "application/json",
+    "User-Agent": "SAM Local Test"
+  },
+  "requestContext": {
+    "accountId": "640168441720",
+    "stage": "dev",
+    "requestId": "local-test-request",
+    "identity": {
+      "sourceIp": "127.0.0.1",
+      "userAgent": "SAM Local Test"
+    },
+    "resourcePath": "/streams/live",
+    "httpMethod": "GET",
+    "apiId": "localtest"
+  }
+}
